@@ -1,0 +1,1814 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ModelCast</title>
+  <style>
+    :root {
+      --bg: #f5f7f8;
+      --panel: #ffffff;
+      --text: #152026;
+      --muted: #60707a;
+      --line: #d8e0e5;
+      --focus: #1769aa;
+      --ink: #0f1720;
+      --good: #16845b;
+      --warn: #9a6b00;
+      --bad: #b52d2d;
+      --hrrr: #1f77b4;
+      --gfs: #2a9d8f;
+      --ecmwf: #6f4e9b;
+      --aifs: #d07a2d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select { font: inherit; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+    }
+
+    aside {
+      background: #10212c;
+      color: #f8fbfc;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    main {
+      padding: 28px;
+      min-width: 0;
+    }
+
+    h1 {
+      font-size: 30px;
+      line-height: 1.05;
+      margin: 0 0 8px;
+      font-weight: 760;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin: 0 0 12px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    aside p { color: #c2d0d8; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: inherit;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    aside input, aside select {
+      border-color: rgba(255,255,255,.18);
+      background: #193140;
+      color: #fff;
+    }
+
+    input:focus, select:focus, button:focus-visible {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(23, 105, 170, .18);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 92px;
+      gap: 10px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .model-list, .metric-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 8px;
+      background: rgba(255,255,255,.05);
+      cursor: pointer;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .check input {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      accent-color: #66c0ff;
+    }
+
+    .check small {
+      display: block;
+      color: #b7c7d1;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 750;
+      background: #43a1d7;
+      color: #05131b;
+      min-height: 46px;
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: #f8fbfc;
+      border: 1px solid rgba(255,255,255,.24);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .62;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      width: fit-content;
+      min-width: 220px;
+    }
+
+    .segmented button {
+      border: 0;
+      background: #fff;
+      padding: 10px 16px;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .segmented button.active {
+      background: #152633;
+      color: #fff;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .location-title {
+      display: grid;
+      gap: 4px;
+      min-width: 260px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .status-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      min-height: 126px;
+    }
+
+    .status-card h3 {
+      margin: 0;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 750;
+      background: #edf4f1;
+      color: var(--good);
+    }
+
+    .pill.warn { background: #fff7dc; color: var(--warn); }
+    .pill.bad { background: #ffeceb; color: var(--bad); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .metric-picker {
+      min-width: 245px;
+    }
+
+    .graph-wrap {
+      padding: 12px 14px 18px;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    svg {
+      display: block;
+      min-width: 840px;
+      width: 100%;
+      height: 500px;
+    }
+
+    .chart-tooltip {
+      position: absolute;
+      display: none;
+      min-width: 190px;
+      max-width: 280px;
+      pointer-events: none;
+      z-index: 5;
+      padding: 10px 12px;
+      border: 1px solid rgba(15, 23, 32, .18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 12px 30px rgba(15, 23, 32, .18);
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .chart-tooltip.visible {
+      display: grid;
+      gap: 7px;
+    }
+
+    .tooltip-time {
+      font-weight: 780;
+      color: var(--ink);
+    }
+
+    .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .tooltip-model {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    .tooltip-value {
+      color: var(--ink);
+      font-weight: 760;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 16px 16px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .precip-totals {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafb;
+    }
+
+    .precip-totals.visible {
+      display: grid;
+    }
+
+    .total-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      display: grid;
+      gap: 3px;
+    }
+
+    .total-chip strong {
+      font-size: 18px;
+      color: var(--ink);
+    }
+
+    .total-chip span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .swatch {
+      width: 18px;
+      height: 4px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 68vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1040px;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #edf2f5;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #53636d;
+      letter-spacing: .04em;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+
+    .time-head,
+    .time-cell {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: #edf2f5;
+      min-width: 132px;
+      box-shadow: 1px 0 0 var(--line);
+    }
+
+    .time-cell {
+      z-index: 1;
+      background: #fff;
+      font-weight: 720;
+    }
+
+    .model-head {
+      text-align: center;
+      border-left: 2px solid var(--line);
+      color: #25333b;
+    }
+
+    .model-head small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .field-head {
+      text-align: right;
+      min-width: 76px;
+    }
+
+    .model-start {
+      border-left: 2px solid var(--line);
+    }
+
+    td.temp-cell {
+      font-weight: 760;
+      color: #061019;
+    }
+
+    td.precip-cell {
+      font-weight: 720;
+      color: #061019;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      min-height: 360px;
+      padding: 36px;
+      color: var(--muted);
+    }
+
+    .note {
+      font-size: 12px;
+      color: #aabac4;
+      line-height: 1.45;
+      margin-top: auto;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1020px) {
+      .app-shell { grid-template-columns: 1fr; }
+      aside { padding: 22px; }
+      main { padding: 20px; }
+      .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 620px) {
+      .field-row { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: 1fr; }
+      .segmented { width: 100%; }
+      .topbar { align-items: stretch; }
+      .panel-head { align-items: stretch; }
+      .metric-picker { min-width: 0; width: 100%; }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside>
+      <div>
+        <h1>ModelCast</h1>
+        <p>Hourly model output by ZIP code, with run initialization times and side-by-side model views.</p>
+      </div>
+
+      <form id="controls" class="stack">
+        <div>
+          <label for="zip">ZIP or postal code</label>
+          <div class="field-row">
+            <input id="zip" name="zip" inputmode="text" autocomplete="postal-code" placeholder="e.g. 34211" value="34211" required>
+            <select id="country" name="country" aria-label="Country code">
+              <option value="us" selected>US</option>
+              <option value="ca">CA</option>
+              <option value="gb">GB</option>
+              <option value="au">AU</option>
+              <option value="de">DE</option>
+              <option value="fr">FR</option>
+              <option value="jp">JP</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="hours">Forecast window</label>
+          <select id="hours" name="hours">
+            <option value="18">18 hours</option>
+            <option value="24">24 hours</option>
+            <option value="48" selected>48 hours</option>
+            <option value="72">72 hours</option>
+            <option value="120">5 days</option>
+            <option value="240">10 days</option>
+            <option value="384">16 days</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Models</label>
+          <div class="model-list">
+            <label class="check"><input type="checkbox" name="model" value="hrrr" checked><span>HRRR <small>U.S. Conus, rapid refresh</small></span></label>
+            <label class="check"><input type="checkbox" name="model" value="gfs" checked><span>GFS <small>Global, NOAA</small></span></label>
+            <label class="check"><input type="checkbox" name="model" value="ecmwf" checked><span>ECMWF <small>IFS HRES 9 km</small></span></label>
+            <label class="check"><input type="checkbox" name="model" value="aifs" checked><span>AI ECMWF <small>AIFS 0.25 degree</small></span></label>
+          </div>
+        </div>
+
+        <div>
+          <label>Parameters</label>
+          <div class="metric-list">
+            <label class="check"><input type="checkbox" name="field" value="temperature_2m" checked><span>Surface temp <small>Fahrenheit</small></span></label>
+            <label class="check"><input type="checkbox" name="field" value="dew_point_2m" checked><span>Dewpoint <small>Fahrenheit</small></span></label>
+            <label class="check"><input type="checkbox" name="field" value="wind_speed_10m" checked><span>Wind speed <small>mph</small></span></label>
+            <label class="check"><input type="checkbox" name="field" value="wind_gusts_10m" checked><span>Wind gust <small>mph</small></span></label>
+            <label class="check"><input type="checkbox" name="field" value="wind_direction_10m" checked><span>Wind direction <small>degrees/cardinal</small></span></label>
+            <label class="check"><input type="checkbox" name="field" value="precipitation" checked><span>Hourly precip <small>inches</small></span></label>
+          </div>
+        </div>
+
+        <button class="btn" id="loadBtn" type="submit">Load latest runs</button>
+        <button class="btn secondary" id="locateBtn" type="button">Use my location</button>
+        <button class="btn secondary" id="sampleBtn" type="button">Reset to 34211 sample</button>
+      </form>
+
+      <div class="stack">
+        <div>
+          <label for="runModel">Run comparison model</label>
+          <select id="runModel">
+            <option value="gfs">GFS</option>
+            <option value="hrrr">HRRR</option>
+            <option value="ecmwf">ECMWF</option>
+            <option value="aifs">AI ECMWF</option>
+          </select>
+        </div>
+        <div>
+          <label for="runField">Run comparison parameter</label>
+          <select id="runField">
+            <option value="temperature_2m">Surface temp</option>
+            <option value="dew_point_2m">Dewpoint</option>
+            <option value="wind_speed_10m">Wind speed</option>
+            <option value="wind_gusts_10m">Wind gust</option>
+            <option value="wind_direction_10m">Wind direction</option>
+            <option value="precipitation">Running precip</option>
+          </select>
+        </div>
+        <div>
+          <label for="runCount">Previous runs</label>
+          <select id="runCount">
+            <option value="4">Latest 4</option>
+            <option value="8" selected>Latest 8</option>
+            <option value="12">Latest 12</option>
+            <option value="24">Latest 24</option>
+          </select>
+        </div>
+        <button class="btn secondary" id="compareRunsBtn" type="button">Compare runs</button>
+      </div>
+
+      <p class="note">Data source: Open-Meteo forecast and Single Runs APIs plus model-update metadata. Postal lookup uses Zippopotam. HRRR is limited to the continental U.S.; AIFS is natively 6-hourly and may be interpolated to hourly by the API.</p>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div class="location-title">
+          <h2 id="placeTitle">Ready for a location</h2>
+          <p id="placeMeta">Enter a ZIP code, choose models, then load the latest available model output.</p>
+        </div>
+        <div class="stack">
+          <div class="segmented" role="tablist" aria-label="App tab">
+            <button id="latestTab" class="active" type="button">Latest</button>
+            <button id="runTab" type="button">Run Compare</button>
+          </div>
+          <div class="segmented" id="viewModeWrap" role="tablist" aria-label="View mode">
+            <button id="graphMode" class="active" type="button">Graph</button>
+            <button id="tableMode" type="button">Text</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="statusGrid" class="status-grid" aria-live="polite"></section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="panelTitle">Hourly output</h2>
+            <p id="panelSub">No data loaded yet.</p>
+          </div>
+          <div class="metric-picker" id="metricPickerWrap">
+            <label for="metric">Graph field</label>
+            <select id="metric">
+              <option value="temperature_2m">Surface temp</option>
+              <option value="dew_point_2m">Dewpoint</option>
+              <option value="wind_speed_10m">Wind speed</option>
+              <option value="wind_gusts_10m">Wind gust</option>
+              <option value="wind_direction_10m">Wind direction</option>
+              <option value="precipitation">Hourly precipitation</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="precipTotals" class="precip-totals" aria-live="polite"></div>
+        <div id="output" class="empty">The graph and table will appear here.</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_FIELDS = [
+      "temperature_2m",
+      "dew_point_2m",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+      "wind_direction_10m",
+      "precipitation"
+    ];
+
+    const FIELD_LABELS = {
+      temperature_2m: "Temp",
+      dew_point_2m: "Dewpoint",
+      wind_speed_10m: "Wind speed",
+      wind_gusts_10m: "Wind gust",
+      wind_direction_10m: "Wind dir",
+      precipitation: "Precip"
+    };
+
+    const FIELD_TABLE_LABELS = {
+      temperature_2m: "Temp F",
+      dew_point_2m: "Dew F",
+      wind_speed_10m: "Wind",
+      wind_gusts_10m: "Gust",
+      wind_direction_10m: "Dir",
+      precipitation: "Precip"
+    };
+
+    const FIELD_UNITS = {
+      temperature_2m: "F",
+      dew_point_2m: "F",
+      wind_speed_10m: "mph",
+      wind_gusts_10m: "mph",
+      wind_direction_10m: "deg",
+      precipitation: "in"
+    };
+
+    const MODELS = {
+      hrrr: {
+        key: "hrrr",
+        name: "HRRR",
+        color: "#1f77b4",
+        endpoint: "https://api.open-meteo.com/v1/gfs",
+        singleRunEndpoint: "https://single-runs-api.open-meteo.com/v1/forecast",
+        modelIds: ["ncep_hrrr_conus", "hrrr_conus", "hrrr"],
+        dailyModelIds: ["ncep_hrrr_conus", "hrrr_conus"],
+        metaModel: "ncep_hrrr_conus",
+        runStepHours: 1,
+        note: "U.S. Conus only"
+      },
+      gfs: {
+        key: "gfs",
+        name: "GFS",
+        color: "#2a9d8f",
+        endpoint: "https://api.open-meteo.com/v1/gfs",
+        singleRunEndpoint: "https://single-runs-api.open-meteo.com/v1/forecast",
+        modelIds: ["ncep_gfs013", "gfs_global", "gfs_seamless"],
+        dailyModelIds: ["gfs_seamless", "gfs_global"],
+        metaModel: "ncep_gfs013",
+        runStepHours: 6,
+        note: "Global"
+      },
+      ecmwf: {
+        key: "ecmwf",
+        name: "ECMWF",
+        color: "#6f4e9b",
+        endpoint: "https://api.open-meteo.com/v1/ecmwf",
+        singleRunEndpoint: "https://single-runs-api.open-meteo.com/v1/forecast",
+        modelIds: ["ecmwf_ifs", "ecmwf_ifs025", ""],
+        dailyModelIds: ["ecmwf_ifs025"],
+        metaModel: "ecmwf_ifs",
+        runStepHours: 6,
+        note: "IFS HRES when available"
+      },
+      aifs: {
+        key: "aifs",
+        name: "AI ECMWF",
+        color: "#d07a2d",
+        endpoint: "https://api.open-meteo.com/v1/ecmwf",
+        singleRunEndpoint: "https://single-runs-api.open-meteo.com/v1/forecast",
+        modelIds: ["ecmwf_aifs025_single", "ecmwf_aifs025"],
+        dailyModelIds: ["ecmwf_aifs025_single", "ecmwf_aifs025"],
+        metaModel: "ecmwf_aifs025_single",
+        runStepHours: 6,
+        note: "AIFS"
+      }
+    };
+
+    const RUN_COLORS = ["#1f77b4", "#d07a2d", "#2a9d8f", "#6f4e9b", "#d62728", "#8c564b", "#17becf", "#bcbd22", "#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc948", "#b07aa1", "#ff9da7", "#9c755f", "#bab0ab", "#2f4b7c", "#a05195", "#665191", "#ffa600", "#003f5c", "#7a5195"];
+
+    const state = {
+      tab: "latest",
+      mode: "graph",
+      location: null,
+      models: [],
+      runSeries: [],
+      errors: new Map(),
+      initTimes: new Map()
+    };
+
+    const els = {
+      form: document.getElementById("controls"),
+      zip: document.getElementById("zip"),
+      country: document.getElementById("country"),
+      hours: document.getElementById("hours"),
+      loadBtn: document.getElementById("loadBtn"),
+      sampleBtn: document.getElementById("sampleBtn"),
+      locateBtn: document.getElementById("locateBtn"),
+      compareRunsBtn: document.getElementById("compareRunsBtn"),
+      latestTab: document.getElementById("latestTab"),
+      runTab: document.getElementById("runTab"),
+      viewModeWrap: document.getElementById("viewModeWrap"),
+      graphMode: document.getElementById("graphMode"),
+      tableMode: document.getElementById("tableMode"),
+      runModel: document.getElementById("runModel"),
+      runField: document.getElementById("runField"),
+      runCount: document.getElementById("runCount"),
+      placeTitle: document.getElementById("placeTitle"),
+      placeMeta: document.getElementById("placeMeta"),
+      statusGrid: document.getElementById("statusGrid"),
+      panelTitle: document.getElementById("panelTitle"),
+      panelSub: document.getElementById("panelSub"),
+      precipTotals: document.getElementById("precipTotals"),
+      output: document.getElementById("output"),
+      metric: document.getElementById("metric"),
+      metricPickerWrap: document.getElementById("metricPickerWrap")
+    };
+
+    els.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadWeather();
+    });
+
+    els.sampleBtn.addEventListener("click", () => {
+      els.zip.value = "34211";
+      els.country.value = "us";
+      els.hours.value = "48";
+      document.querySelectorAll('input[name="model"]').forEach(input => input.checked = true);
+      document.querySelectorAll('input[name="field"]').forEach(input => input.checked = true);
+      syncMetricOptions();
+      loadWeather();
+    });
+    els.locateBtn.addEventListener("click", useBrowserLocation);
+
+    els.graphMode.addEventListener("click", () => setMode("graph"));
+    els.tableMode.addEventListener("click", () => setMode("table"));
+    els.metric.addEventListener("change", render);
+    els.latestTab.addEventListener("click", () => setTab("latest"));
+    els.runTab.addEventListener("click", () => setTab("run"));
+    els.compareRunsBtn.addEventListener("click", loadRunComparison);
+    els.runField.addEventListener("change", () => {
+      if (state.tab === "run" && state.runSeries.length) renderRunComparison();
+    });
+    document.querySelectorAll('input[name="field"]').forEach(input => {
+      input.addEventListener("change", () => {
+        syncMetricOptions();
+        render();
+      });
+    });
+
+    function setTab(tab) {
+      state.tab = tab;
+      els.latestTab.classList.toggle("active", tab === "latest");
+      els.runTab.classList.toggle("active", tab === "run");
+      els.viewModeWrap.style.display = tab === "latest" ? "grid" : "none";
+      els.statusGrid.style.display = tab === "latest" ? "grid" : "none";
+      els.metricPickerWrap.style.display = tab === "latest" && state.mode === "graph" ? "block" : "none";
+      if (tab === "latest") {
+        render();
+      } else if (state.runSeries.length) {
+        renderRunComparison();
+      } else {
+        els.panelTitle.textContent = "Run comparison";
+        els.panelSub.textContent = "Choose a model, parameter, and number of prior runs, then compare.";
+        setEmpty("Run-to-run output will appear here.");
+      }
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      els.graphMode.classList.toggle("active", mode === "graph");
+      els.tableMode.classList.toggle("active", mode === "table");
+      render();
+    }
+
+    async function loadWeather() {
+      const selected = [...document.querySelectorAll('input[name="model"]:checked')].map(input => input.value);
+      if (!selected.length) {
+        setEmpty("Choose at least one model.");
+        return;
+      }
+      if (!getSelectedFields().length) {
+        setEmpty("Choose at least one parameter.");
+        return;
+      }
+
+      setLoading(true);
+      state.models = [];
+      state.errors = new Map();
+      state.initTimes = new Map();
+      renderStatus(selected.map(key => ({ config: MODELS[key], status: "loading" })));
+      setEmpty("Loading model data...");
+
+      try {
+        const location = await lookupPostal(els.country.value, els.zip.value.trim());
+        state.location = location;
+        els.placeTitle.textContent = `${location.place}, ${location.region}`;
+        els.placeMeta.textContent = `${location.country.toUpperCase()} ${location.postcode}  |  ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+
+        const hours = Number(els.hours.value);
+        const settled = await Promise.all(selected.map(async key => {
+          const config = MODELS[key];
+          try {
+            const [forecast, initMeta, dailyPrecip] = await Promise.all([
+              fetchModel(config, location, hours),
+              fetchInitTime(config),
+              fetchDailyPrecip(config, location, hours)
+            ]);
+            state.initTimes.set(key, initMeta);
+            const model = normalizeModel(config, forecast, hours);
+            model.dailyPrecipTotal = dailyPrecip;
+            return { ok: true, data: model };
+          } catch (error) {
+            state.errors.set(key, error.message || "Unable to load model.");
+            return { ok: false, config };
+          }
+        }));
+
+        state.models = settled.filter(item => item.ok).map(item => item.data);
+        render();
+      } catch (error) {
+        setEmpty(error.message || "Unable to load weather data.");
+        els.placeTitle.textContent = "Location lookup failed";
+        els.placeMeta.textContent = "Check the ZIP/postal code and country.";
+        renderStatus(selected.map(key => ({ config: MODELS[key], status: "error", message: error.message })));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadRunComparison() {
+      setTab("run");
+      setLoading(true);
+      els.compareRunsBtn.disabled = true;
+      els.compareRunsBtn.textContent = "Comparing...";
+      state.runSeries = [];
+      setEmpty("Loading previous model runs...");
+
+      try {
+        const location = await lookupPostal(els.country.value, els.zip.value.trim());
+        state.location = location;
+        els.placeTitle.textContent = `${location.place}, ${location.region}`;
+        els.placeMeta.textContent = `${location.country.toUpperCase()} ${location.postcode}  |  ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+
+        const config = MODELS[els.runModel.value];
+        const field = els.runField.value;
+        const hours = Number(els.hours.value);
+        const count = Number(els.runCount.value);
+        const initMeta = await fetchInitTime(config);
+        const latestRun = initMeta.date || fallbackLatestRun(config);
+        const runTimes = buildRunTimes(latestRun, config.runStepHours, count);
+
+        const settled = await Promise.all(runTimes.map(async (runDate, index) => {
+          try {
+            const forecast = await fetchSingleRun(config, location, hours, runDate);
+            return { ok: true, data: normalizeRunSeries(config, forecast, field, runDate, index, hours) };
+          } catch (error) {
+            return { ok: false, runDate, error };
+          }
+        }));
+
+        state.runSeries = settled.filter(item => item.ok).map(item => item.data);
+        if (!state.runSeries.length) throw new Error("No previous runs returned data for that setup.");
+        renderRunComparison();
+      } catch (error) {
+        els.panelTitle.textContent = "Run comparison";
+        els.panelSub.textContent = error.message || "Unable to load run comparison.";
+        setEmpty(error.message || "Unable to load run comparison.");
+      } finally {
+        setLoading(false);
+        els.compareRunsBtn.disabled = false;
+        els.compareRunsBtn.textContent = "Compare runs";
+      }
+    }
+
+    async function useBrowserLocation() {
+      if (!navigator.geolocation) {
+        setEmpty("Your browser does not support location detection.");
+        return;
+      }
+
+      els.locateBtn.disabled = true;
+      els.locateBtn.textContent = "Detecting...";
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 12000,
+            maximumAge: 15 * 60 * 1000
+          });
+        });
+        const location = await reverseGeocodePostal(position.coords.latitude, position.coords.longitude);
+        els.zip.value = location.postcode;
+        els.country.value = location.country;
+        state.location = location;
+        els.placeTitle.textContent = `${location.place}, ${location.region}`;
+        els.placeMeta.textContent = `${location.country.toUpperCase()} ${location.postcode}  |  ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+        if (state.tab === "latest") loadWeather();
+        else loadRunComparison();
+      } catch (error) {
+        setEmpty(error.message || "Location detection was not available.");
+      } finally {
+        els.locateBtn.disabled = false;
+        els.locateBtn.textContent = "Use my location";
+      }
+    }
+
+    async function lookupPostal(country, postcode) {
+      const url = `https://api.zippopotam.us/${encodeURIComponent(country)}/${encodeURIComponent(postcode)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("ZIP/postal code was not found.");
+      const data = await response.json();
+      const place = data.places && data.places[0];
+      if (!place) throw new Error("No coordinate result was returned for that ZIP/postal code.");
+      return {
+        postcode: data["post code"] || postcode,
+        country,
+        place: place["place name"] || postcode,
+        region: place["state abbreviation"] || place.state || data.country || "",
+        latitude: Number(place.latitude),
+        longitude: Number(place.longitude)
+      };
+    }
+
+    async function reverseGeocodePostal(latitude, longitude) {
+      const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&language=en&format=json`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Could not translate your location into a ZIP code.");
+      const data = await response.json();
+      const result = data.results && data.results[0];
+      if (!result || !result.postcodes || !result.postcodes.length) {
+        throw new Error("Your location was found, but no nearby ZIP code was returned.");
+      }
+      return {
+        postcode: result.postcodes[0],
+        country: (result.country_code || "US").toLowerCase(),
+        place: result.name || "Current location",
+        region: result.admin1 || result.country || "",
+        latitude: Number(latitude),
+        longitude: Number(longitude)
+      };
+    }
+
+    async function fetchModel(config, location, hours) {
+      let lastError = null;
+      for (const modelId of config.modelIds) {
+        const params = new URLSearchParams({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          hourly: API_FIELDS.join(","),
+          temperature_unit: "fahrenheit",
+          wind_speed_unit: "mph",
+          precipitation_unit: "inch",
+          timezone: "auto",
+          forecast_hours: String(hours),
+          cell_selection: "nearest"
+        });
+        if (modelId) params.set("models", modelId);
+        const url = `${config.endpoint}?${params.toString()}`;
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          if (!response.ok || data.error) {
+            throw new Error(data.reason || `${config.name} returned ${response.status}`);
+          }
+          data._modelId = modelId || "default";
+          data._sourceUrl = url;
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw new Error(lastError ? lastError.message : `${config.name} did not return data.`);
+    }
+
+    async function fetchDailyPrecip(config, location, hours) {
+      const days = Math.min(Math.ceil(hours / 24), 16);
+      const idsToTry = (config.dailyModelIds && config.dailyModelIds.length)
+        ? config.dailyModelIds
+        : config.modelIds.filter(Boolean);
+      let lastError = null;
+      for (const modelId of idsToTry) {
+        const params = new URLSearchParams({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          daily: "precipitation_sum",
+          precipitation_unit: "inch",
+          timezone: "auto",
+          forecast_days: String(days),
+          cell_selection: "nearest",
+          models: modelId
+        });
+        const url = `${config.endpoint}?${params.toString()}`;
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          if (!response.ok || data.error) throw new Error(data.reason || `daily precip returned ${response.status}`);
+          const sums = (data.daily && data.daily.precipitation_sum) || [];
+          if (!sums.length) throw new Error("no daily data returned");
+          const total = sums.reduce((acc, val) => acc + (Number.isFinite(Number(val)) ? Number(val) : 0), 0);
+          return { total, days: sums.length, modelId };
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      return null;
+    }
+
+    async function fetchSingleRun(config, location, hours, runDate) {
+      let lastError = null;
+      for (const modelId of config.modelIds.filter(Boolean)) {
+        const params = new URLSearchParams({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          hourly: API_FIELDS.join(","),
+          temperature_unit: "fahrenheit",
+          wind_speed_unit: "mph",
+          precipitation_unit: "inch",
+          timezone: "auto",
+          forecast_hours: String(hours),
+          cell_selection: "nearest",
+          run: formatRunForApi(runDate),
+          models: modelId
+        });
+        const url = `${config.singleRunEndpoint}?${params.toString()}`;
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          if (!response.ok || data.error) {
+            throw new Error(data.reason || `${config.name} run ${formatRunForApi(runDate)} returned ${response.status}`);
+          }
+          data._modelId = modelId;
+          data._sourceUrl = url;
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      throw new Error(lastError ? lastError.message : `${config.name} run did not return data.`);
+    }
+
+    async function fetchInitTime(config) {
+      const urls = [
+        `https://openmeteo.s3.amazonaws.com/data_spatial/${config.metaModel}/latest.json`,
+        `https://openmeteo.s3.amazonaws.com/data_run/${config.metaModel}/latest.json`,
+        `https://api.open-meteo.com/v1/model-updates?model=${config.metaModel}`,
+        `https://api.open-meteo.com/v1/model_updates?model=${config.metaModel}`
+      ];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const data = await response.json();
+          const raw = data.last_run_initialisation_time || data.initialisation_time || data.initialization_time || data.reference_time || data.run || data.latest_run;
+          const parsed = parseRunTime(raw);
+          if (parsed) return { date: parsed, source: url };
+        } catch (_) {
+          // Metadata is nice-to-have; the forecast itself remains usable without it.
+        }
+      }
+
+      return { date: null, source: null };
+    }
+
+    function parseRunTime(raw) {
+      if (raw == null) return null;
+      if (typeof raw === "number") return new Date(raw * 1000);
+      if (typeof raw !== "string") return null;
+      const trimmed = raw.trim();
+      if (/^\d{10}$/.test(trimmed)) return new Date(Number(trimmed) * 1000);
+      if (/^\d{4}\/\d{2}\/\d{2}\/\d{4}Z$/.test(trimmed)) {
+        const [year, month, day, hhmm] = trimmed.replace("Z", "").split("/");
+        return new Date(`${year}-${month}-${day}T${hhmm.slice(0,2)}:${hhmm.slice(2)}:00Z`);
+      }
+      if (/^\d{4}-\d{2}-\d{2}T\d{4}Z?$/.test(trimmed)) {
+        return new Date(`${trimmed.slice(0, 13)}:${trimmed.slice(13, 15)}:00Z`);
+      }
+      const date = new Date(trimmed);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function fallbackLatestRun(config) {
+      const now = new Date();
+      const date = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const hour = date.getUTCHours();
+      date.setUTCMinutes(0, 0, 0);
+      date.setUTCHours(hour - (hour % config.runStepHours));
+      return date;
+    }
+
+    function buildRunTimes(latestRun, stepHours, count) {
+      return Array.from({ length: count }, (_, index) => new Date(latestRun.getTime() - index * stepHours * 60 * 60 * 1000));
+    }
+
+    function formatRunForApi(date) {
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(date.getUTCDate()).padStart(2, "0");
+      const hour = String(date.getUTCHours()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hour}:00`;
+    }
+
+    function normalizeModel(config, data, hours) {
+      const hourly = data.hourly || {};
+      const times = hourly.time || [];
+      const rows = times.map((time, index) => {
+        const row = { time, model: config.key };
+        API_FIELDS.forEach(field => {
+          row[field] = hourly[field] && hourly[field][index] != null ? Number(hourly[field][index]) : null;
+        });
+        return row;
+      });
+
+      return {
+        config,
+        rows: rows.slice(0, hours),
+        units: data.hourly_units || {},
+        timezone: data.timezone || "local",
+        timezoneAbbr: data.timezone_abbreviation || "",
+        sourceUrl: data._sourceUrl,
+        modelId: data._modelId
+      };
+    }
+
+    function normalizeRunSeries(config, data, field, runDate, index, hours) {
+      const hourly = data.hourly || {};
+      const times = hourly.time || [];
+      let running = 0;
+      const points = times.slice(0, hours).map((time, pointIndex) => {
+        const rawValue = hourly[field] && hourly[field][pointIndex] != null ? Number(hourly[field][pointIndex]) : null;
+        let value = rawValue;
+        if (field === "precipitation") {
+          running += Number.isFinite(rawValue) ? rawValue : 0;
+          value = running;
+        }
+        return { time, value };
+      });
+
+      return {
+        config,
+        runDate,
+        label: formatDate(runDate, true),
+        color: RUN_COLORS[index % RUN_COLORS.length],
+        points,
+        modelId: data._modelId
+      };
+    }
+
+    function render() {
+      if (state.tab === "run") {
+        if (state.runSeries.length) renderRunComparison();
+        return;
+      }
+      renderStatus();
+      syncMetricOptions();
+      if (!state.models.length) {
+        if (state.errors.size) setEmpty("No model data could be loaded. Check the status cards for details.");
+        return;
+      }
+
+      const count = state.models.reduce((sum, model) => sum + model.rows.length, 0);
+      els.panelTitle.textContent = state.mode === "graph" ? "Hourly graph" : "Text output";
+      els.panelSub.textContent = `${state.models.length} model${state.models.length === 1 ? "" : "s"} loaded, ${count} hourly rows.`;
+      els.metricPickerWrap.style.display = state.mode === "graph" ? "block" : "none";
+      renderPrecipTotals();
+
+      if (state.mode === "graph") renderGraph();
+      else renderTable();
+    }
+
+    function getSelectedFields() {
+      return [...document.querySelectorAll('input[name="field"]:checked')].map(input => input.value);
+    }
+
+    function syncMetricOptions() {
+      const selectedFields = getSelectedFields();
+      const current = els.metric.value;
+      els.metric.innerHTML = selectedFields.map(field => `<option value="${field}">${FIELD_LABELS[field]}</option>`).join("");
+      if (selectedFields.includes(current)) {
+        els.metric.value = current;
+      } else if (selectedFields.length) {
+        els.metric.value = selectedFields[0];
+      }
+    }
+
+    function renderPrecipTotals() {
+      const selectedFields = getSelectedFields();
+      if (!state.models.length || !selectedFields.includes("precipitation")) {
+        els.precipTotals.className = "precip-totals";
+        els.precipTotals.innerHTML = "";
+        return;
+      }
+
+      els.precipTotals.className = "precip-totals visible";
+      els.precipTotals.innerHTML = state.models.map(model => {
+        const hourlyTotal = model.rows.reduce((sum, row) => sum + (Number.isFinite(row.precipitation) ? row.precipitation : 0), 0);
+        const dp = model.dailyPrecipTotal;
+        const total = dp ? dp.total : hourlyTotal;
+        const source = dp ? `${dp.days}-day sums` : "hourly";
+        return `
+          <div class="total-chip">
+            <span><span class="dot" style="background:${model.config.color}"></span> ${model.config.name} total precip</span>
+            <strong>${total.toFixed(2)} in</strong>
+            <span style="font-size:11px;color:var(--muted)">via ${source}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderStatus(items) {
+      const modelItems = items || [
+        ...state.models.map(model => ({ config: model.config, status: "ok", model })),
+        ...[...state.errors.entries()].map(([key, message]) => ({ config: MODELS[key], status: "error", message }))
+      ];
+
+      if (!modelItems.length) {
+        els.statusGrid.innerHTML = "";
+        return;
+      }
+
+      els.statusGrid.innerHTML = modelItems.map(item => {
+        const initMeta = state.initTimes.get(item.config.key);
+        const initText = initMeta && initMeta.date ? formatDate(initMeta.date, true) : "Unavailable";
+        const rows = item.model ? item.model.rows.length : 0;
+        const pill = item.status === "loading"
+          ? `<span class="pill warn">Loading</span>`
+          : item.status === "error"
+            ? `<span class="pill bad">Issue</span>`
+            : `<span class="pill">Loaded</span>`;
+        const detail = item.status === "error"
+          ? escapeHtml(item.message || "Could not load this model.")
+          : item.status === "loading"
+            ? "Fetching forecast and run metadata."
+            : `${rows} hourly values. API model: ${escapeHtml(item.model.modelId)}.`;
+        return `
+          <article class="status-card">
+            <h3><span><span class="dot" style="background:${item.config.color}"></span> ${item.config.name}</span>${pill}</h3>
+            <div class="meta"><strong>Init:</strong> ${initText}</div>
+            <div class="meta">${detail}</div>
+            <div class="meta">${item.config.note}</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderGraph() {
+      const selectedFields = getSelectedFields();
+      if (!selectedFields.length) {
+        setEmpty("Choose at least one parameter.");
+        return;
+      }
+      const field = els.metric.value;
+      const values = state.models.flatMap(model => getGraphRows(model, field).map(point => point.value).filter(value => Number.isFinite(value)));
+      if (!values.length) {
+        setEmpty(`No ${FIELD_LABELS[field].toLowerCase()} data was returned for the selected model(s).`);
+        return;
+      }
+
+      const width = 1120;
+      const height = 500;
+      const margin = { top: 28, right: 56, bottom: 70, left: 64 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+      if (field === "wind_direction_10m") { min = 0; max = 360; }
+      if (field === "precipitation") { min = 0; max = Math.max(max, 0.01); }
+      if (min === max) { min -= 1; max += 1; }
+      const pad = (max - min) * 0.08;
+      const yMin = field === "precipitation" || field === "wind_direction_10m" ? min : min - pad;
+      const yMax = max + pad;
+      const longest = Math.max(...state.models.map(model => getGraphRows(model, field).length));
+      const x = index => margin.left + (longest <= 1 ? 0 : (index / (longest - 1)) * innerW);
+      const y = value => margin.top + innerH - ((value - yMin) / (yMax - yMin)) * innerH;
+
+      const grid = buildGrid(width, height, margin, yMin, yMax, y);
+      const xLabels = buildXLabels(state.models[0].rows, x, height, longest);
+      const tempBands = field === "temperature_2m" || field === "dew_point_2m"
+        ? buildTempBands(width, margin, yMin, yMax, y)
+        : "";
+      const series = state.models.map(model => buildSeries(model, field, x, y)).join("");
+      const legend = state.models.map(model => `<span class="legend-item"><span class="swatch" style="background:${model.config.color}"></span>${model.config.name}</span>`).join("");
+
+      els.output.className = "";
+      els.output.innerHTML = `
+        <div class="graph-wrap">
+          <svg id="chartSvg" data-field="${field}" data-width="${width}" data-height="${height}" data-left="${margin.left}" data-right="${margin.right}" data-top="${margin.top}" data-bottom="${margin.bottom}" data-longest="${longest}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${FIELD_LABELS[field]} by model">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
+            ${tempBands}
+            ${grid}
+            ${xLabels}
+            ${series}
+            <text x="${margin.left}" y="22" fill="#53636d" font-size="13" font-weight="700">${field === "precipitation" ? "Running precip total" : FIELD_LABELS[field]} (${FIELD_UNITS[field]})</text>
+            <rect class="hover-capture" x="${margin.left}" y="${margin.top}" width="${innerW}" height="${innerH}" fill="transparent"></rect>
+          </svg>
+          <div id="chartTooltip" class="chart-tooltip"></div>
+        </div>
+        <div class="legend">${legend}${field === "temperature_2m" || field === "dew_point_2m" ? `<span class="legend-item"><span class="swatch" style="background:linear-gradient(90deg,#2962ff,#05a3b8,#72bf44,#f2d447,#f28c28,#d83232)"></span>Temp color scale</span>` : ""}</div>
+      `;
+      attachChartTooltip();
+    }
+
+    function renderRunComparison() {
+      const field = els.runField.value;
+      const series = state.runSeries;
+      const values = series.flatMap(run => run.points.map(point => point.value).filter(value => Number.isFinite(value)));
+      if (!values.length) {
+        setEmpty("No run-comparison values were returned.");
+        return;
+      }
+
+      const width = 1120;
+      const height = 500;
+      const margin = { top: 28, right: 56, bottom: 70, left: 64 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+      if (field === "wind_direction_10m") { min = 0; max = 360; }
+      if (field === "precipitation") { min = 0; max = Math.max(max, 0.01); }
+      if (min === max) { min -= 1; max += 1; }
+      const pad = (max - min) * 0.08;
+      const yMin = field === "precipitation" || field === "wind_direction_10m" ? min : min - pad;
+      const yMax = max + pad;
+      const runTimes = [...new Set(series.flatMap(run => run.points.map(point => point.time)))].sort();
+      state.runTimes = runTimes;
+      const longest = runTimes.length;
+      const x = index => margin.left + (longest <= 1 ? 0 : (index / (longest - 1)) * innerW);
+      const y = value => margin.top + innerH - ((value - yMin) / (yMax - yMin)) * innerH;
+      const grid = buildGrid(width, height, margin, yMin, yMax, y);
+      const runTimeRows = runTimes.map(time => ({ time }));
+      const xLabels = buildXLabels(runTimeRows, x, height, longest);
+      const tempBands = field === "temperature_2m" || field === "dew_point_2m"
+        ? buildTempBands(width, margin, yMin, yMax, y)
+        : "";
+      const runLines = series.map(run => buildRunSeries(run, x, y, runTimes)).join("");
+      const legend = series.map(run => `<span class="legend-item"><span class="swatch" style="background:${run.color}"></span>${run.label}</span>`).join("");
+
+      els.panelTitle.textContent = `${series[0].config.name} run comparison`;
+      els.panelSub.textContent = `${series.length} initialization times, plotted against the same valid forecast hours.`;
+      els.metricPickerWrap.style.display = "none";
+      els.precipTotals.className = "precip-totals";
+      els.precipTotals.innerHTML = "";
+      els.output.className = "";
+      els.output.innerHTML = `
+        <div class="graph-wrap">
+          <svg id="runChartSvg" data-field="${field}" data-width="${width}" data-left="${margin.left}" data-right="${margin.right}" data-longest="${longest}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${FIELD_LABELS[field]} by model run">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#fff"></rect>
+            ${tempBands}
+            ${grid}
+            ${xLabels}
+            ${runLines}
+            <text x="${margin.left}" y="22" fill="#53636d" font-size="13" font-weight="700">${field === "precipitation" ? "Running precip total" : FIELD_LABELS[field]} (${FIELD_UNITS[field]})</text>
+            <rect class="hover-capture" x="${margin.left}" y="${margin.top}" width="${innerW}" height="${innerH}" fill="transparent"></rect>
+          </svg>
+          <div id="chartTooltip" class="chart-tooltip"></div>
+        </div>
+        <div class="legend">${legend}${field === "temperature_2m" || field === "dew_point_2m" ? `<span class="legend-item"><span class="swatch" style="background:linear-gradient(90deg,#2962ff,#05a3b8,#72bf44,#f2d447,#f28c28,#d83232)"></span>Temp color scale</span>` : ""}</div>
+      `;
+      attachRunTooltip();
+    }
+
+    function buildRunSeries(run, x, y, runTimes) {
+      const pointMap = new Map(run.points.map(point => [point.time, point]));
+      const points = runTimes.map((time, index) => {
+        const point = pointMap.get(time);
+        return point && Number.isFinite(point.value) ? { x: x(index), y: y(point.value), value: point.value } : null;
+      });
+      let lines = "";
+      let previous = null;
+      for (const point of points) {
+        if (point && previous) {
+          lines += `<line x1="${previous.x}" y1="${previous.y}" x2="${point.x}" y2="${point.y}" stroke="${run.color}" stroke-width="3" stroke-linecap="round"></line>`;
+        }
+        previous = point || null;
+      }
+      const markers = points.filter(Boolean).map(point => `<circle cx="${point.x}" cy="${point.y}" r="3" fill="${run.color}" stroke="#fff" stroke-width="1"></circle>`).join("");
+      return `<g>${lines}${markers}</g>`;
+    }
+
+    function buildTempBands(width, margin, yMin, yMax, y) {
+      const bands = [
+        { min: yMin, max: 20, color: "#2962ff", opacity: .12 },
+        { min: 20, max: 45, color: "#05a3b8", opacity: .10 },
+        { min: 45, max: 65, color: "#72bf44", opacity: .10 },
+        { min: 65, max: 82, color: "#f2d447", opacity: .14 },
+        { min: 82, max: 100, color: "#f28c28", opacity: .14 },
+        { min: 100, max: yMax, color: "#d83232", opacity: .13 }
+      ];
+
+      return bands.map(band => {
+        const min = Math.max(yMin, band.min);
+        const max = Math.min(yMax, band.max);
+        if (max <= min) return "";
+        const top = y(max);
+        const bottom = y(min);
+        return `<rect x="${margin.left}" y="${top}" width="${width - margin.left - margin.right}" height="${Math.max(1, bottom - top)}" fill="${band.color}" opacity="${band.opacity}"></rect>`;
+      }).join("");
+    }
+
+    function buildGrid(width, height, margin, yMin, yMax, y) {
+      const ticks = 5;
+      let out = "";
+      for (let i = 0; i <= ticks; i++) {
+        const value = yMin + ((yMax - yMin) * i / ticks);
+        const yy = y(value);
+        out += `<line x1="${margin.left}" y1="${yy}" x2="${width - margin.right}" y2="${yy}" stroke="#e7ecef"></line>`;
+        out += `<text x="${margin.left - 10}" y="${yy + 4}" fill="#60707a" font-size="12" text-anchor="end">${formatNumber(value)}</text>`;
+      }
+      out += `<line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="#b8c4ca"></line>`;
+      out += `<line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="#b8c4ca"></line>`;
+      return out;
+    }
+
+    function buildXLabels(rows, x, height, longest) {
+      if (!rows.length) return "";
+      const step = Math.max(1, Math.ceil(longest / 8));
+      return rows.map((row, index) => {
+        if (index % step !== 0 && index !== rows.length - 1) return "";
+        const xx = x(index);
+        return `<text x="${xx}" y="${height - 42}" fill="#60707a" font-size="12" text-anchor="middle">${formatTime(row.time)}</text>`;
+      }).join("");
+    }
+
+    function buildSeries(model, field, x, y) {
+      const rows = getGraphRows(model, field).filter(row => Number.isFinite(row.value));
+      if (!rows.length) return "";
+      const points = rows.map((row, index) => ({ x: x(index), y: y(row.value), value: row.value }));
+      let lines = "";
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const stroke = model.config.color;
+        lines += `<line x1="${prev.x}" y1="${prev.y}" x2="${curr.x}" y2="${curr.y}" stroke="${stroke}" stroke-width="3" stroke-linecap="round"></line>`;
+      }
+      const markers = points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="3.2" fill="${model.config.color}" stroke="#fff" stroke-width="1"></circle>`).join("");
+      return `<g>${lines}${markers}</g>`;
+    }
+
+    function attachChartTooltip() {
+      const svg = document.getElementById("chartSvg");
+      const tooltip = document.getElementById("chartTooltip");
+      if (!svg || !tooltip) return;
+
+      const field = svg.dataset.field;
+      const left = Number(svg.dataset.left);
+      const right = Number(svg.dataset.right);
+      const width = Number(svg.dataset.width);
+      const longest = Number(svg.dataset.longest);
+      const innerW = width - left - right;
+
+      const moveTooltip = event => {
+        const bounds = svg.getBoundingClientRect();
+        const xPosition = ((event.clientX - bounds.left) / bounds.width) * width;
+        const rawIndex = longest <= 1 ? 0 : Math.round(((xPosition - left) / innerW) * (longest - 1));
+        const index = Math.max(0, Math.min(longest - 1, rawIndex));
+        const time = state.models.find(model => model.rows[index])?.rows[index]?.time;
+        if (!time) {
+          tooltip.className = "chart-tooltip";
+          return;
+        }
+
+        const rows = state.models.map(model => {
+          const point = getGraphRows(model, field)[index];
+          const value = point && Number.isFinite(point.value) ? formatGraphTooltipValue(point.value, field) : "-";
+          return `
+            <div class="tooltip-row">
+              <span class="tooltip-model"><span class="dot" style="background:${model.config.color}"></span>${model.config.name}</span>
+              <span class="tooltip-value">${value}</span>
+            </div>
+          `;
+        }).join("");
+
+        tooltip.innerHTML = `<div class="tooltip-time">${formatDate(time, false)}</div>${rows}`;
+        tooltip.className = "chart-tooltip visible";
+
+        const wrapBounds = tooltip.parentElement.getBoundingClientRect();
+        const desiredLeft = event.clientX - wrapBounds.left + 14;
+        const desiredTop = event.clientY - wrapBounds.top + 14;
+        const maxLeft = Math.max(8, wrapBounds.width - tooltip.offsetWidth - 8);
+        const maxTop = Math.max(8, wrapBounds.height - tooltip.offsetHeight - 8);
+        tooltip.style.left = `${Math.min(Math.max(8, desiredLeft), maxLeft)}px`;
+        tooltip.style.top = `${Math.min(Math.max(8, desiredTop), maxTop)}px`;
+      };
+
+      svg.addEventListener("mousemove", moveTooltip);
+      svg.addEventListener("mouseleave", () => {
+        tooltip.className = "chart-tooltip";
+      });
+    }
+
+    function attachRunTooltip() {
+      const svg = document.getElementById("runChartSvg");
+      const tooltip = document.getElementById("chartTooltip");
+      if (!svg || !tooltip) return;
+
+      const field = svg.dataset.field;
+      const left = Number(svg.dataset.left);
+      const right = Number(svg.dataset.right);
+      const width = Number(svg.dataset.width);
+      const longest = Number(svg.dataset.longest);
+      const innerW = width - left - right;
+
+      const moveTooltip = event => {
+        const bounds = svg.getBoundingClientRect();
+        const xPosition = ((event.clientX - bounds.left) / bounds.width) * width;
+        const rawIndex = longest <= 1 ? 0 : Math.round(((xPosition - left) / innerW) * (longest - 1));
+        const index = Math.max(0, Math.min(longest - 1, rawIndex));
+        const time = state.runTimes && state.runTimes[index];
+        if (!time) {
+          tooltip.className = "chart-tooltip";
+          return;
+        }
+
+        const rows = state.runSeries.map(run => {
+          const point = run.points.find(item => item.time === time);
+          const value = point && Number.isFinite(point.value) ? formatGraphTooltipValue(point.value, field) : "-";
+          return `
+            <div class="tooltip-row">
+              <span class="tooltip-model"><span class="dot" style="background:${run.color}"></span>${run.label}</span>
+              <span class="tooltip-value">${value}</span>
+            </div>
+          `;
+        }).join("");
+
+        tooltip.innerHTML = `<div class="tooltip-time">${formatDate(time, false)}</div>${rows}`;
+        tooltip.className = "chart-tooltip visible";
+
+        const wrapBounds = tooltip.parentElement.getBoundingClientRect();
+        const desiredLeft = event.clientX - wrapBounds.left + 14;
+        const desiredTop = event.clientY - wrapBounds.top + 14;
+        const maxLeft = Math.max(8, wrapBounds.width - tooltip.offsetWidth - 8);
+        const maxTop = Math.max(8, wrapBounds.height - tooltip.offsetHeight - 8);
+        tooltip.style.left = `${Math.min(Math.max(8, desiredLeft), maxLeft)}px`;
+        tooltip.style.top = `${Math.min(Math.max(8, desiredTop), maxTop)}px`;
+      };
+
+      svg.addEventListener("mousemove", moveTooltip);
+      svg.addEventListener("mouseleave", () => {
+        tooltip.className = "chart-tooltip";
+      });
+    }
+
+    function getGraphRows(model, field) {
+      if (field !== "precipitation") {
+        return model.rows.map(row => ({ time: row.time, value: row[field] }));
+      }
+
+      let running = 0;
+      return model.rows.map(row => {
+        if (Number.isFinite(row.precipitation)) running += row.precipitation;
+        return { time: row.time, value: running };
+      });
+    }
+
+    function formatGraphTooltipValue(value, field) {
+      if (field === "precipitation") return `${value.toFixed(2)} in`;
+      if (field === "wind_direction_10m") return formatDirection(value);
+      return `${formatValue(value)} ${FIELD_UNITS[field]}`;
+    }
+
+    function renderTable() {
+      const selectedFields = getSelectedFields();
+      if (!selectedFields.length) {
+        setEmpty("Choose at least one parameter.");
+        return;
+      }
+      const times = [...new Set(state.models.flatMap(model => model.rows.map(row => row.time)))].sort();
+      if (!times.length) {
+        setEmpty("No hourly rows were returned.");
+        return;
+      }
+
+      const modelMaps = new Map(state.models.map(model => [
+        model.config.key,
+        new Map(model.rows.map(row => [row.time, row]))
+      ]));
+
+      els.output.className = "";
+      els.output.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="time-head" rowspan="2">Hour</th>
+                ${state.models.map(model => {
+                  const initMeta = state.initTimes.get(model.config.key);
+                  const initText = initMeta && initMeta.date ? formatDate(initMeta.date, true) : "Init unavailable";
+                  return `<th class="model-head" colspan="${selectedFields.length}"><span class="dot" style="background:${model.config.color}"></span> ${model.config.name}<small>${initText}</small></th>`;
+                }).join("")}
+              </tr>
+              <tr>
+                ${state.models.map(() => selectedFields.map((field, index) => `<th class="field-head ${index === 0 ? "model-start" : ""}">${FIELD_TABLE_LABELS[field]}</th>`).join("")).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${times.map(time => {
+                return `
+                  <tr>
+                    <td class="time-cell">${formatDate(time, false)}</td>
+                    ${state.models.map(model => {
+                      const row = modelMaps.get(model.config.key).get(time);
+                      if (!row) {
+                        return selectedFields.map((_, index) => `<td class="${index === 0 ? "model-start" : ""}">-</td>`).join("");
+                      }
+                      return selectedFields.map((field, index) => renderFieldCell(row, field, index === 0)).join("");
+                    }).join("")}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderFieldCell(row, field, isModelStart) {
+      const modelStartClass = isModelStart ? " model-start" : "";
+      if (field === "temperature_2m" || field === "dew_point_2m") {
+        return `<td class="temp-cell${modelStartClass}" style="background:${tempColor(row[field])}">${formatValue(row[field])}</td>`;
+      }
+      if (field === "wind_direction_10m") {
+        return `<td class="${modelStartClass.trim()}">${formatDirection(row[field])}</td>`;
+      }
+      if (field === "precipitation") {
+        return `<td class="precip-cell${modelStartClass}" style="background:${precipColor(row[field])}">${formatPrecip(row[field])}</td>`;
+      }
+      return `<td class="${modelStartClass.trim()}">${formatValue(row[field])}</td>`;
+    }
+
+    function tempColor(value) {
+      if (!Number.isFinite(value)) return "#f0f3f5";
+      const stops = [
+        [-10, [41, 98, 255]],
+        [20, [5, 163, 184]],
+        [45, [114, 191, 68]],
+        [65, [242, 212, 71]],
+        [82, [242, 140, 40]],
+        [100, [216, 50, 50]]
+      ];
+      if (value <= stops[0][0]) return rgb(stops[0][1]);
+      if (value >= stops[stops.length - 1][0]) return rgb(stops[stops.length - 1][1]);
+      for (let i = 1; i < stops.length; i++) {
+        const [max, colorB] = stops[i];
+        const [min, colorA] = stops[i - 1];
+        if (value <= max) {
+          const t = (value - min) / (max - min);
+          return rgb(colorA.map((channel, index) => Math.round(channel + (colorB[index] - channel) * t)));
+        }
+      }
+      return "#f0f3f5";
+    }
+
+    function precipColor(value) {
+      if (!Number.isFinite(value) || value <= 0) return "transparent";
+      if (value < 0.03) return "#dff4dc";
+      if (value < 0.10) return "#88cf7e";
+      if (value < 0.25) return "#218c45";
+      if (value < 0.50) return "#f2d447";
+      if (value < 1.00) return "#f28c28";
+      return "#d83232";
+    }
+
+    function rgb(parts) {
+      return `rgb(${parts[0]}, ${parts[1]}, ${parts[2]})`;
+    }
+
+    function formatValue(value) {
+      return Number.isFinite(value) ? value.toFixed(1) : "-";
+    }
+
+    function formatPrecip(value) {
+      return Number.isFinite(value) ? value.toFixed(3) : "-";
+    }
+
+    function formatNumber(value) {
+      if (Math.abs(value) >= 100) return value.toFixed(0);
+      if (Math.abs(value) >= 10) return value.toFixed(1);
+      return value.toFixed(2);
+    }
+
+    function formatDirection(value) {
+      if (!Number.isFinite(value)) return "-";
+      const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const dir = dirs[Math.round(value / 45) % 8];
+      return `${Math.round(value)} ${dir}`;
+    }
+
+    function formatTime(value) {
+      return new Date(value).toLocaleString([], { month: "numeric", day: "numeric", hour: "numeric" });
+    }
+
+    function formatDate(value, withZone) {
+      const date = value instanceof Date ? value : new Date(value);
+      if (withZone) {
+        const options = { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hour12: false };
+        return date.toLocaleString([], options).replace(",", "") + "Z";
+      }
+      return date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric" });
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setEmpty(message) {
+      els.metricPickerWrap.style.display = state.tab === "latest" && state.mode === "graph" ? "block" : "none";
+      els.precipTotals.className = "precip-totals";
+      els.precipTotals.innerHTML = "";
+      els.output.className = "empty";
+      els.output.textContent = message;
+    }
+
+    function setLoading(isLoading) {
+      els.loadBtn.disabled = isLoading;
+      els.loadBtn.textContent = isLoading ? "Loading..." : "Load latest runs";
+    }
+
+    renderStatus();
+  </script>
+</body>
+</html>
